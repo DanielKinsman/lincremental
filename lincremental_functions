@@ -1,0 +1,43 @@
+#Function to shift backup sets back by one.
+#First argument is "hourly", "daily", "weekly" or "monthly", second argument is number of sets.
+function shiftbackupsback {
+	for (( i=$2; i>=1; i-- ))
+	do
+        	let CURRENT=i-1 || true # || true to stop set -e from killing shell
+        	CURRENT="$TRGBASE/$1.$CURRENT"
+        	if [ -d $CURRENT ] ; then
+                	$MV -vn "$CURRENT" "$TRGBASE/$1.$i"
+        	fi
+	done
+}
+
+function lock {
+    $MKDIR -pv $1
+    LOCK="$1/$2"
+    PIDFILE="$LOCK/pid"
+
+    if $MKDIR $LOCK &> /dev/null ; then
+        trap "$RM -rf $LOCK" EXIT
+        $ECHO "$$" > $PIDFILE
+    else
+        #lock failed, check if the other process is alive
+        OTHERPID="$($CAT "$PIDFILE")"
+        if ! $KILL -0 $OTHERPID &> /dev/null ; then
+            #other process is dead, remove lockfile and restart
+            $RM -rf $LOCK
+
+            #try again
+            if $MKDIR $LOCK &> /dev/null; then
+                trap "$RM -rf $LOCK" EXIT
+                $ECHO "$$" > $PIDFILE
+            else
+                $ECHO "Could not create lock directory"
+                exit 1 #give up
+            fi
+        else
+            #other process is still running
+            $ECHO "Backup process is already running, exiting"
+            exit 0
+        fi
+    fi
+}
