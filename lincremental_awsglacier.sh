@@ -7,6 +7,11 @@ set -eu
 . ./lincremental.cfg
 . ./lincremental_functions
 
+if [ "$AWS_ENABLE" != "yes" ] ; then
+    $ECHO "Amazon glacier uploads are disabled, exiting"
+    exit 0
+fi
+
 ORIGINAL="$TRGBASE/daily.0"
 UPLOAD="$AWS_UPLOAD_DIR/upload.tar"
 READY_LOCK_FILE="$LOCK_DIR/upload.ready"
