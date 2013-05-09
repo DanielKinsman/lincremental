@@ -1,79 +1,73 @@
 #!/bin/bash
 #Incremental backup script
-#Takes all backup sets (hourly, daily, weekly monthly) and pushes them to amazon glacier via tar files
-#This script does the initial master upload
+#Takes the latest daily backup set and pushes it to amazon glacier via a tar file
 
 set -eu
 
 . ./lincremental.cfg
 . ./lincremental_functions
 
-#the directory where normal rsync lincremental backups are (note trailing slash)
-ORIGINAL="$TRGBASE/"
-
-MASTER="$AWS_SIMULCRUM/master/"
-MASTERTAR="$AWS_SIMULCRUM/master.tar"
-CURRENT="$AWS_SIMULCRUM/current/"
-READY_LOCK_FILE="$LOCK_DIR/master.ready"
-
-#if the original dir does not exist, we can't do anything, exit
-if [ ! -d $ORIGINAL ] ; then
-        $ECHO "Can't find original backup sets at $ORIGINAL, exiting."
-	exit 1
-fi
+ORIGINAL="$TRGBASE/daily.0"
+UPLOAD="$AWS_UPLOAD_DIR/upload.tar"
+READY_LOCK_FILE="$LOCK_DIR/upload.ready"
+LINCREMENTAL="lincremental"
 
 lock $LOCK_DIR "glacier"
 
-#create the simulcrum folder if it does not exist
-if [ ! -d $AWS_SIMULCRUM ] ; then
-	$MKDIR -v $AWS_SIMULCRUM
+#create the upload folder if it does not exist
+if [ ! -d $AWS_UPLOAD_DIR ] ; then
+	$MKDIR -v $AWS_UPLOAD_DIR
 fi
 
 #Check to see if we are resuming a partial upload
-if [ -! f $READY_LOCK_FILE ] ; then
-    #Starting from scratch, create the master folder
-    $RSYNC $AWS_OPT $ORIGINAL $MASTER
+if [ ! -f $READY_LOCK_FILE ] ; then
+    #Starting from scratch, create the upload file
 
-    #create a tar from master to upload to glacier
-    #(tars preserve hard links so take up much less space)
-    $TAR -cvf $MASTERTAR -C $AWS_SIMULCRUM master
+    #if the original dir does not exist, we can't do anything, exit
+    if [ ! -d $ORIGINAL ] ; then
+            $ECHO "Can't find original backup set at $ORIGINAL, exiting."
+        exit 1
+    fi
+
+    DESCRIPTION="$LINCREMENTAL $($DATE -r $ORIGINAL)"
+
+    #create a tar from original to upload to glacier
+    $TAR $TAR_OPT $UPLOAD -C $TRGBASE "daily.0"
 
     #encrypt the backup file if desired
     if [ ! -z "$GPG_PUBLIC_KEY" ] ; then
-        $GPG -v -r $GPG_PUBLIC_KEY -o "$MASTERTAR.gpg" --encrypt $MASTERTAR
-        $RM -fv $MASTERTAR
-        MASTERTAR="$MASTERTAR.gpg"
+        $GPG -v -r $GPG_PUBLIC_KEY -o "$UPLOAD.gpg" --encrypt $UPLOAD
+        $RM -fv $UPLOAD
+        UPLOAD="$UPLOAD.gpg"
     fi
 
-    #indicate that next time we come in, we don't have to create
-    #the archive again
+    #Indicate that next time we come in, we don't have to create
+    #the archive again. Note that we can't just use the upload file as a lock
+    #because it may have been created, but not yet finished.
     $TOUCH $READY_LOCK_FILE
 
     #upload the file
-    $GLACIER upload $AWS_VAULT $MASTERTAR --description $MASTERTAR
+    $GLACIER upload $AWS_VAULT $UPLOAD --description "$DESCRIPTION"
 else
     #Resuming a multipart upload
     if [ ! -z "$GPG_PUBLIC_KEY" ] ; then
-        MASTERTAR="$MASTERTAR.gpg"
+        UPLOAD="$UPLOAD.gpg"
     fi
 
     #todo: handle case where lock file was touched, but upload never started
+    #todo: handle case where lock file exists, but upload file doesn't
 
     #Pull the glacier multipart upload id out
-    MULTIPART_ID=$GLACIER listmultiparts $AWS_VAULT | $GREP $MASTERTAR | $CUT --bytes=3-94
-    $GLACIER upload --uploadid $MULTIPART_ID $AWS_VAULT $MASTERTAR
+    MULTIPART_ID=$GLACIER listmultiparts $AWS_VAULT | $GREP $LINCREMENTAL | $CUT --bytes=3-94
+    $GLACIER upload --uploadid $MULTIPART_ID $AWS_VAULT $UPLOAD
 fi
 
-#with tar of master successfully created, master it becomes our
-#current representation of what is on glacier
-$MV $MASTER $CURRENT
-
-#Don't need the tar anymore
+#Clean up
 $RM -fv $READY_LOCK_FILE
-$RM -fv $MASTERTAR
+$RM -fv $UPLOAD
 
 #Test plan for this script:
-#single run success
+#single run success -done
 #dead before touch lockfile, then restart
 #dead after upload started, then restart
 #dead after upload resumed, then restart
