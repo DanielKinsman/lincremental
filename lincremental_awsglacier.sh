@@ -10,6 +10,7 @@ set -eu
 ORIGINAL="$TRGBASE/daily.0"
 UPLOAD="$AWS_UPLOAD_DIR/upload.tar"
 READY_LOCK_FILE="$LOCK_DIR/upload.ready"
+LAST_UPLOAD_FILE="$LOCK_DIR/upload.last"
 LINCREMENTAL="lincremental"
 
 lock $LOCK_DIR "glacier"
@@ -34,6 +35,18 @@ if [ ! -f $READY_LOCK_FILE ] ; then
         exit 1
     fi
 
+    #Make sure we wait the desired time between uploads
+    if [ -f $LAST_UPLOAD_FILE ] ; then
+        let "LAST=$($DATE -r $LAST_UPLOAD_FILE +%s)"
+        let "NOW=$($DATE +%s)"
+        ELAPSED=$(( $(($NOW - $LAST)) / 60 / 60 / 24 )) #days
+        $ECHO "$ELAPSED days since last backup"
+        if [ "$ELAPSED" -lt "$AWS_DAYS_BETWEEN_UPLOADS" ] ; then
+            $ECHO "No need to make another backup so soon, exiting"
+            exit 0
+        fi
+    fi
+
     DESCRIPTION="$LINCREMENTAL $($DATE -r $ORIGINAL)"
 
     #create a tar from original to upload to glacier
@@ -50,6 +63,9 @@ if [ ! -f $READY_LOCK_FILE ] ; then
     #the archive again. Note that we can't just use the upload file as a lock
     #because it may have been created, but not yet finished.
     $TOUCH $READY_LOCK_FILE
+
+    #Keep track of the last time we started an upload
+    $TOUCH $LAST_UPLOAD_FILE
 
     #upload the file
     $ECHO "Uploading"
