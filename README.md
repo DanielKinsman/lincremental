@@ -18,7 +18,7 @@ Steps to install:
 9. `ln -s /usr/local/lincremental/lincremental_daily.sh   /etc/cron.daily/lincremental`
 10. `ln -s /usr/local/lincremental/lincremental_weekly.sh  /etc/cron.weekly/lincremental`
 11. `ln -s /usr/local/lincremental/lincremental_monthly.sh /etc/cron.monthly/lincremental`
-12. `ln -s /usr/local/lincremental/lincremental_network.sh /etc/cron.hourly/lincremental_network` (optional)
+12. `ln -s /usr/local/lincremental/lincremental_network.sh /etc/cron.hourly/lincrementalnetwork` (optional)
 
 amazon glacier backups
 ----------------------
@@ -32,6 +32,7 @@ Steps to install:
 2. download, install and configure [glacier-cmd](https://github.com/uskudnik/amazon-glacier-cmd-interface) and test that it is working (for root user)
 3. set the appropriate "AWS" options in /etc/lincremental/lincremental.cfg
 4. if you want your files to be encrypted before being uploaded to amazon (recommended), configure [GnuPG](http://gnupg.org/) and provide the appropriate key in /etc/lincremental/lincremental.cfg (GPG_PUBLIC_KEY)
+5. `ln -s /usr/local/lincremental/lincremental_awsglacier.sh /etc/cron.hourly/lincrementalglacier`
 
 Note that when using encryption, you must backup your GnuPG private keys to somewhere manually rather than relying on lincremental and amazon glacier. If you lose the private keys in a hard drive crash, the encrypted backups on glacier will be useless.
 
