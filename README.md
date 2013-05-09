@@ -28,10 +28,10 @@ Use this feature at your own risk, I am not liable for any charges you incur fro
 
 Steps to install:
 
-. install lincremental as above
-. download, install and configure [glacier-cmd](https://github.com/uskudnik/amazon-glacier-cmd-interface) and test that it is working (for root user)
-. set the appropriate "AWS" options in /etc/lincremental/lincremental.cfg
-. if you want your files to be encrypted before being uploaded to amazon (recommended), configure [GnuPG](http://gnupg.org/) and provide the appropriate key in /etc/lincremental/lincremental.cfg (GPG_PUBLIC_KEY)
+1. install lincremental as above
+2. download, install and configure [glacier-cmd](https://github.com/uskudnik/amazon-glacier-cmd-interface) and test that it is working (for root user)
+3. set the appropriate "AWS" options in /etc/lincremental/lincremental.cfg
+4. if you want your files to be encrypted before being uploaded to amazon (recommended), configure [GnuPG](http://gnupg.org/) and provide the appropriate key in /etc/lincremental/lincremental.cfg (GPG_PUBLIC_KEY)
 
 Note that when using encryption, you must backup your GnuPG private keys to somewhere manually rather than relying on lincremental and amazon glacier. If you lose the private keys in a hard drive crash, the encrypted backups on glacier will be useless.
 
