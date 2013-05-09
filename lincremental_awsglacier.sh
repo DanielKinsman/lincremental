@@ -4,8 +4,8 @@
 
 set -eu
 
-. ./lincremental.cfg
-. ./lincremental_functions
+. /etc/lincremental/lincremental.cfg
+. /usr/local/lincremental/lincremental_functions
 
 if [ "$AWS_ENABLE" != "yes" ] ; then
     $ECHO "Amazon glacier uploads are disabled, exiting"
