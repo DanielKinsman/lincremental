@@ -14,6 +14,11 @@ LINCREMENTAL="lincremental"
 
 lock $LOCK_DIR "glacier"
 
+function cleanup {
+    $RM -fv $READY_LOCK_FILE
+    $RM -fv $UPLOAD
+}
+
 #create the upload folder if it does not exist
 if [ ! -d $AWS_UPLOAD_DIR ] ; then
 	$MKDIR -v $AWS_UPLOAD_DIR
@@ -47,6 +52,7 @@ if [ ! -f $READY_LOCK_FILE ] ; then
     $TOUCH $READY_LOCK_FILE
 
     #upload the file
+    $ECHO "Uploading"
     $GLACIER upload $AWS_VAULT $UPLOAD --description "$DESCRIPTION"
 else
     #Resuming a multipart upload
@@ -54,22 +60,35 @@ else
         UPLOAD="$UPLOAD.gpg"
     fi
 
-    #todo: handle case where lock file was touched, but upload never started
-    #todo: handle case where lock file exists, but upload file doesn't
+    if [ ! -f $UPLOAD ] ; then
+        $ECHO "Can't resume as the upload file ($UPLOAD) is missing, cleaning up and exiting."
+        cleanup
+        exit 1
+    fi
 
     #Pull the glacier multipart upload id out
-    MULTIPART_ID=$GLACIER listmultiparts $AWS_VAULT | $GREP $LINCREMENTAL | $CUT --bytes=3-94
+    MULTIPART_ID=$($GLACIER listmultiparts $AWS_VAULT | $GREP $LINCREMENTAL | $CUT --bytes=3-94)
+
+    #Handle case where there is no multipart upload in progress
+    #E.g. lock file was touched, but upload never started (network possibly down)
+    if [ -z "$MULTIPART_ID" ] ; then
+        $ECHO "Can't resume as there is no multipart upload in progress, cleaning up and exiting."
+        cleanup
+        exit 1
+    fi
+
+    $ECHO "Resuming multipart upload $MULTIPART_ID"
     $GLACIER upload --uploadid $MULTIPART_ID $AWS_VAULT $UPLOAD
 fi
 
 #Clean up
-$RM -fv $READY_LOCK_FILE
-$RM -fv $UPLOAD
+cleanup
 
 #Test plan for this script:
 #single run success -done
-#dead before touch lockfile, then restart
-#dead after upload started, then restart
-#dead after upload resumed, then restart
-#resume sucess
-#dead after touch, but *before* upload started
+#dead before touch lockfile, then restart -done
+#dead after upload started, then restart -done
+#dead after upload resumed, then restart -done
+#resume sucess -done
+#dead after touch, but *before* upload started -done
+#lock file exists but upload file doesn't -done
