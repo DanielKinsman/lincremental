@@ -4,8 +4,8 @@
 
 set -eu
 
-. ./lincremental.cfg
-. ./lincremental_functions
+. /etc/lincremental/lincremental.cfg
+. /usr/local/lincremental/lincremental_functions
 
 #the source directory to sync across (note the trailing slash)
 NETWORK_SRC="$TRGBASE/"

@@ -4,8 +4,8 @@
 
 set -eu
 
-. ./lincremental.cfg
-. ./lincremental_functions
+. /etc/lincremental/lincremental.cfg
+. /usr/local/lincremental/lincremental_functions
 
 #the specific directory to store this backup in
 TRG="$TRGBASE/hourly.0"

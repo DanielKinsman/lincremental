@@ -4,8 +4,8 @@
 
 set -eu
 
-. ./lincremental.cfg
-. ./lincremental_functions
+. /etc/lincremental/lincremental.cfg
+. /usr/local/lincremental/lincremental_functions
 
 #If it takes you longer than a month to back up, you
 #probably have bigger problems, but what the hell,
