@@ -24,7 +24,7 @@ amazon glacier backups
 ----------------------
 Lincremental can also backup to amazon's [glacier service](https://aws.amazon.com/glacier/). At the moment this does *not* mean incremental backups, but rather uploading a copy of the latest daily backup every 28 days (configurable). While these uploads are only initiated once every 28 days (configurable), they are resumed automatically every hour until they are complete.
 
-Use this feature at your own risk, I am not liable for any charges you incurr from amazon (or anywhere else for that matter).
+Use this feature at your own risk, I am not liable for any charges you incur from amazon (or anywhere else for that matter). See LICENSE file for legal details.
 
 Steps to install:
 
