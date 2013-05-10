@@ -14,8 +14,11 @@ fi
 
 ORIGINAL="$TRGBASE/daily.0"
 UPLOAD="$AWS_UPLOAD_DIR/upload.tar"
-READY_LOCK_FILE="$LOCK_DIR/upload.ready"
-LAST_UPLOAD_FILE="$LOCK_DIR/upload.last"
+
+#do not use LOCK_DIR for files that need to persist across reboots,
+#as by default /var/lock is treated as a tempfs by debian/ubuntu
+READY_LOCK_FILE="$AWS_UPLOAD_DIR/upload.ready"
+LAST_UPLOAD_FILE="$AWS_UPLOAD_DIR/upload.last"
 LINCREMENTAL="lincremental"
 
 lock $LOCK_DIR "glacier"
@@ -27,7 +30,7 @@ function cleanup {
 
 #create the upload folder if it does not exist
 if [ ! -d $AWS_UPLOAD_DIR ] ; then
-	$MKDIR -v $AWS_UPLOAD_DIR
+    $MKDIR -v $AWS_UPLOAD_DIR
 fi
 
 #Check to see if we are resuming a partial upload
@@ -36,7 +39,7 @@ if [ ! -f $READY_LOCK_FILE ] ; then
 
     #if the original dir does not exist, we can't do anything, exit
     if [ ! -d $ORIGINAL ] ; then
-            $ECHO "Can't find original backup set at $ORIGINAL, exiting."
+        $ECHO "Can't find original backup set at $ORIGINAL, exiting."
         exit 1
     fi
 
@@ -104,12 +107,3 @@ fi
 
 #Clean up
 cleanup
-
-#Test plan for this script:
-#single run success -done
-#dead before touch lockfile, then restart -done
-#dead after upload started, then restart -done
-#dead after upload resumed, then restart -done
-#resume sucess -done
-#dead after touch, but *before* upload started -done
-#lock file exists but upload file doesn't -done
