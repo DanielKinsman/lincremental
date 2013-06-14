@@ -45,4 +45,4 @@ contact
 
 [website](https://github.com/DanielKinsman/lincremental)
 
-danielkinsman+lincremental@gmail.com ([gpg key](http://sks.spodhuis.org/pks/lookup?op=vindex&search=0x709C423C750B8627))
+danielkinsman@riseup.net ([gpg key](http://sks.spodhuis.org/pks/lookup?op=vindex&search=0x709C423C750B8627))
